@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Looty Exchange</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0F2620;        /* фон: тёмная «банкнотная» зелень */
+    --ink-2: #15332B;      /* поверхности */
+    --ink-3: #1C4036;      /* поднятые элементы */
+    --line: rgba(185, 228, 201, 0.13);
+    --mint: #B9E4C9;       /* гравировка, вторичный текст */
+    --paper: #EEF4EF;      /* основной текст */
+    --muted: #8DB3A0;
+    --gold: #E3B34C;       /* легендарное, главная кнопка */
+    --gold-ink: #241A05;
+    --epic: #AE92FF;
+    --rare: #5FD08A;
+    --danger: #FF8A7A;
+    --r-note: 22px;
+    --r-panel: 16px;
+    --r-ctl: 12px;
+    --display: "Dela Gothic One", "Onest", system-ui, sans-serif;
+    --body: "Onest", system-ui, -apple-system, sans-serif;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--ink); color: var(--paper); }
+  body {
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding-bottom: calc(96px + var(--safe-b));
+    font-feature-settings: "tnum" 1;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .wrap { max-width: 520px; margin: 0 auto; padding: 14px 16px 0; }
+
+  /* Шапка */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .seal {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    border: 1.5px solid var(--gold); display: grid; place-items: center;
+    font-family: var(--display); color: var(--gold); font-size: 15px;
+    background: radial-gradient(circle, rgba(227,179,76,.16), transparent 70%);
+  }
+  .brand b { font-weight: 700; font-size: 16px; white-space: nowrap; }
+  .brand small { display: block; color: var(--muted); font-size: 12px; line-height: 1.2; }
+
+  .seg {
+    display: inline-flex; padding: 3px; border-radius: 999px;
+    background: var(--ink-2); border: 1px solid var(--line);
+  }
+  .seg button {
+    border: 0; background: none; padding: 6px 12px; border-radius: 999px;
+    font-weight: 600; font-size: 13px; color: var(--muted);
+  }
+  .seg button[aria-pressed="true"] { background: var(--mint); color: var(--ink); }
+
+  /* Банкнота — главный элемент */
+  .note {
+    position: relative; overflow: hidden; isolation: isolate;
+    border-radius: var(--r-note);
+    padding: 18px 18px 16px;
+    background:
+      radial-gradient(120% 90% at 100% 0%, #24564A 0%, transparent 60%),
+      linear-gradient(160deg, #1D463B 0%, #15342C 55%, #10291F 100%);
+    border: 1px solid rgba(185,228,201,.22);
+    box-shadow: inset 0 0 0 6px rgba(15,38,32,.55), inset 0 0 0 7px rgba(185,228,201,.12);
+  }
+  .note .rosette { position: absolute; right: -90px; top: -70px; width: 300px; height: 300px; z-index: -1; opacity: .55; pointer-events: none; }
+  .note .rosette.small { left: -60px; right: auto; top: auto; bottom: -80px; width: 170px; height: 170px; opacity: .3; }
+  .note-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--mint); font-size: 12.5px; }
+  .serial { font-family: var(--display); letter-spacing: .06em; font-size: 12px; color: rgba(185,228,201,.75); }
+  .amount {
+    font-family: var(--display); line-height: 1; margin: 14px 0 4px;
+    font-size: clamp(30px, 11vw, 46px); letter-spacing: -.01em; color: var(--paper);
+    white-space: nowrap; transition: font-size .15s;
+  }
+  .amount .cur { color: var(--gold); margin-right: 4px; }
+  .note-sub { color: var(--mint); font-size: 13px; }
+
+  .slider { margin: 18px 0 6px; position: relative; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 30px; background: none; margin: 0;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 6px;
+    background: linear-gradient(90deg, var(--gold) var(--fill, 50%), rgba(185,228,201,.18) var(--fill, 50%));
+  }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 6px; background: rgba(185,228,201,.18); }
+  input[type=range]::-moz-range-progress { height: 6px; border-radius: 6px; background: var(--gold); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px; border-radius: 50%;
+    background: var(--paper); border: 5px solid var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,.35);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--paper); border: 5px solid var(--gold);
+  }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    border: 1px solid var(--line); background: rgba(15,38,32,.5); color: var(--mint);
+    border-radius: 999px; padding: 5px 11px; font-size: 13px; font-weight: 600;
+  }
+  .chip[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+
+  .note-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px dashed rgba(185,228,201,.25); }
+  .price-big { font-family: var(--display); font-size: 26px; line-height: 1; }
+  .rate { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .btn {
+    border: 0; border-radius: var(--r-ctl); padding: 12px 16px; font-weight: 700; font-size: 15px;
+    background: var(--gold); color: var(--gold-ink); white-space: nowrap;
+    transition: transform .08s, background .2s, color .2s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.ghost { background: transparent; color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+
+  .trust { display: flex; gap: 18px; color: var(--muted); font-size: 12.5px; margin: 12px 4px 26px; flex-wrap: wrap; }
+  .trust span::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rare); margin-right: 7px; vertical-align: 1px; }
+
+  /* Каталог */
+  h2 { font-family: var(--display); font-weight: 400; font-size: 21px; margin: 0 0 12px; letter-spacing: .005em; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 12px; padding: 0 16px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; border: 1px solid var(--line); background: var(--ink-2); color: var(--muted);
+    padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 14px;
+  }
+  .tab[aria-selected="true"] { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
+  .list { background: var(--ink-2); border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; }
+  .row { display: grid; grid-template-columns: 4px 1fr auto; align-items: center; gap: 14px; padding: 14px 14px 14px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .bar { align-self: stretch; border-radius: 0 3px 3px 0; margin: -2px 0; }
+  .rarity-rare .bar { background: var(--rare); }
+  .rarity-epic .bar { background: var(--epic); }
+  .rarity-legendary .bar { background: var(--gold); }
+  .r-name { font-weight: 600; }
+  .r-meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .rarity-rare .r-tier { color: var(--rare); }
+  .rarity-epic .r-tier { color: var(--epic); }
+  .rarity-legendary .r-tier { color: var(--gold); }
+  .r-right { display: flex; align-items: center; gap: 10px; }
+  .r-price { font-weight: 700; min-width: 58px; text-align: right; }
+  .add {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--ink-3); color: var(--paper); font-size: 20px; line-height: 1; display: grid; place-items: center;
+  }
+  .stepper { display: flex; align-items: center; background: var(--mint); color: var(--ink); border-radius: 10px; height: 36px; }
+  .stepper button { width: 32px; height: 36px; border: 0; background: none; color: var(--ink); font-size: 18px; font-weight: 700; }
+  .stepper output { min-width: 18px; text-align: center; font-weight: 700; }
+
+  .fineprint { color: var(--muted); font-size: 12.5px; margin: 14px 4px 0; max-width: 60ch; }
+
+  /* Нижняя панель (вне Telegram) */
+  .cta-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    padding: 12px 16px calc(12px + var(--safe-b));
+    background: linear-gradient(180deg, transparent, var(--ink) 30%);
+    display: none;
+  }
+  .cta-bar .btn { width: 100%; max-width: 488px; display: block; margin: 0 auto; padding: 15px; font-size: 16px; }
+  .cta-bar.show { display: block; }
+
+  /* Оформление: шторка */
+  .scrim { position: fixed; inset: 0; background: rgba(5,14,11,.6); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 30; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
+    max-height: 92vh; overflow-y: auto;
+    background: var(--ink-2); border-top: 1px solid rgba(185,228,201,.22);
+    border-radius: 22px 22px 0 0; padding: 10px 16px calc(110px + var(--safe-b));
+    transform: translateY(105%); visibility: hidden; transition: transform .32s cubic-bezier(.2,.8,.2,1), visibility 0s .32s;
+  }
+  .open .scrim { opacity: 1; pointer-events: auto; }
+  .open .sheet { transform: none; visibility: visible; transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+  .grab { width: 40px; height: 4px; border-radius: 4px; background: rgba(185,228,201,.3); margin: 0 auto 14px; }
+  .sheet-in { max-width: 488px; margin: 0 auto; }
+
+  .receipt { border: 1px dashed rgba(185,228,201,.3); border-radius: var(--r-panel); padding: 12px 14px; margin-bottom: 18px; background: rgba(15,38,32,.45); }
+  .rc-line { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 14px; }
+  .rc-line span:first-child { color: var(--mint); }
+  .rc-total { border-top: 1px dashed rgba(185,228,201,.3); margin-top: 8px; padding-top: 10px; display: flex; justify-content: space-between; align-items: baseline; }
+  .rc-total b { font-family: var(--display); font-weight: 400; font-size: 24px; color: var(--gold); }
+  .rc-clear { background: none; border: 0; color: var(--muted); font-size: 13px; padding: 6px 0 0; text-decoration: underline; text-underline-offset: 3px; }
+
+  .field { margin-bottom: 14px; }
+  .field label, .field .lbl { display: block; font-size: 13px; font-weight: 600; color: var(--mint); margin-bottom: 6px; }
+  .field input, .field textarea {
+    width: 100%; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--ink);
+    padding: 12px 13px; font-size: 16px; outline: none; transition: border-color .15s;
+  }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .field input:focus, .field textarea:focus { border-color: var(--mint); }
+  .field.err input { border-color: var(--danger); }
+  .field .hint { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+  .field.err .hint { color: var(--danger); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .when { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .pay { display: grid; gap: 8px; }
+  .pay-opt {
+    display: grid; grid-template-columns: 20px 1fr; gap: 2px 12px; align-items: start; text-align: left;
+    border: 1px solid var(--line); background: var(--ink); border-radius: var(--r-ctl); padding: 12px 13px;
+    transition: border-color .15s, background .15s;
+  }
+  .pay-opt::before {
+    content: ""; grid-row: span 2; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%;
+    border: 1.5px solid var(--muted); box-sizing: border-box;
+  }
+  .pay-opt[aria-pressed="true"] { border-color: var(--gold); background: rgba(227,179,76,.07); }
+  .pay-opt[aria-pressed="true"]::before { border: 5px solid var(--gold); background: var(--paper); }
+  .pay-opt b { font-weight: 600; }
+  .pay-opt span { font-size: 12.5px; color: var(--muted); }
+  .pay-opt[hidden] { display: none; }
+
+  .note-warn { font-size: 12.5px; color: var(--muted); border-left: 2px solid var(--gold); padding: 2px 0 2px 10px; margin-top: 6px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(90px + var(--safe-b)); transform: translate(-50%, 20px);
+    background: var(--paper); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px;
+    opacity: 0; transition: opacity .2s, transform .2s; z-index: 50; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .done { position: fixed; inset: 0; z-index: 60; background: var(--ink); display: none; place-items: center; text-align: center; padding: 24px; }
+  .done.show { display: grid; }
+  .done h3 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 16px 0 8px; }
+  .done p { color: var(--mint); margin: 0 auto; max-width: 34ch; }
+
+  .loading { padding: 60px 0; text-align: center; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="seal" aria-hidden="true">L</div>
+        <div><b id="shopName">Looty Exchange</b><small>Магазин ROB RUN</small></div>
+      </div>
+      <div class="seg" role="group" aria-label="Регион">
+        <button type="button" data-region="EU" aria-pressed="true">EU</button>
+        <button type="button" data-region="NA" aria-pressed="false">NA</button>
+      </div>
+    </header>
+
+    <section class="note" aria-labelledby="cashTitle">
+      <svg class="rosette" viewBox="-150 -150 300 300" aria-hidden="true"></svg>
+      <svg class="rosette small" viewBox="-150 -150 300 300" aria-hidden="true"></svg>
+      <div class="note-head">
+        <span id="cashTitle">Грязные деньги</span>
+        <span class="serial" id="serial">LB 000000</span>
+      </div>
+      <div class="amount" id="amount" aria-live="polite"><span class="cur">$</span>1 000 000</div>
+      <div class="note-sub">Передадим лично на твоём сервере</div>
+
+      <div class="slider">
+        <input type="range" id="cashRange" min="0" max="10" step="1" value="5" aria-label="Сумма игровых денег">
+      </div>
+      <div class="presets" id="presets"></div>
+
+      <div class="note-foot">
+        <div>
+          <div class="price-big" id="cashPrice">700 ₽</div>
+          <div class="rate" id="cashRate">0,70 ₽ за 1 000 $</div>
+        </div>
+        <button type="button" class="btn" id="cashAdd">В корзину</button>
+      </div>
+    </section>
+
+    <div class="trust">
+      <span>Передача в игре</span>
+      <span>Пароль не нужен</span>
+      <span>Оплата после подтверждения</span>
+    </div>
+
+    <h2>Предметы</h2>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="list" id="list" role="tabpanel"><div class="loading">Загружаем каталог…</div></div>
+    <p class="fineprint">Всё купленное действует до вайпа твоего сервера: Federal Raid сбрасывает деньги, базы и снаряжение раз в семь дней.</p>
+  </div>
+</div>
+
+<div class="cta-bar" id="ctaBar"><button type="button" class="btn" id="ctaBtn">Оформить</button></div>
+
+<div id="checkout">
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="coTitle">
+    <div class="grab"></div>
+    <div class="sheet-in">
+      <h2 id="coTitle">Твой заказ</h2>
+      <div class="receipt" id="receipt"></div>
+
+      <div class="field">
+        <span class="lbl">Регион</span>
+        <div class="seg" role="group" aria-label="Регион заказа" id="coRegion">
+          <button type="button" data-region="EU" aria-pressed="true">EU</button>
+          <button type="button" data-region="NA" aria-pressed="false">NA</button>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field" id="fServer">
+          <label for="server">Сервер</label>
+          <input id="server" placeholder="Например, EU-14" autocomplete="off">
+          <div class="hint">Номер из меню серверов</div>
+        </div>
+        <div class="field" id="fNick">
+          <label for="nick">Ник в игре</label>
+          <input id="nick" placeholder="Как тебя найти" autocomplete="off">
+          <div class="hint">Точно как в игре</div>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Когда удобно принять</span>
+        <div class="when" id="when">
+          <button type="button" class="chip" aria-pressed="true">Прямо сейчас</button>
+          <button type="button" class="chip" aria-pressed="false">В течение часа</button>
+          <button type="button" class="chip" aria-pressed="false">Вечером</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Оплата</span>
+        <div class="pay" id="pay" role="radiogroup" aria-label="Способ оплаты">
+          <button type="button" class="pay-opt" data-pay="crypto" role="radio" aria-pressed="true">
+            <b>Криптовалюта</b><span>USDT или TON через @CryptoBot. Оплата подтвердится сама</span>
+          </button>
+          <button type="button" class="pay-opt" data-pay="manual" role="radio" aria-pressed="false">
+            <b>Перевод</b><span>СБП или на карту. Реквизиты пришлёт бот, а оплату проверит продавец</span>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="comment">Комментарий</label>
+        <textarea id="comment" placeholder="Где встретиться, о чём предупредить"></textarea>
+      </div>
+      <p class="note-warn">После отправки бот пришлёт счёт или реквизиты. Когда оплата пройдёт, продавец свяжется и передаст товар в игре. Kefir может заблокировать аккаунт за нарушение правил игры, это риск покупателя.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<div class="done" id="done">
+  <div>
+    <div class="seal" style="width:64px;height:64px;font-size:28px;margin:0 auto" aria-hidden="true">✓</div>
+    <h3>Заказ отправлен</h3>
+    <p>Бот пришлёт счёт или реквизиты для оплаты.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTG = !!(tg && tg.initData);
+  const $ = (s) => document.querySelector(s);
+  const RARITY = { rare: "Редкий", epic: "Эпический", legendary: "Легендарный" };
+
+  let C;                       // каталог
+  const cart = new Map();      // id -> qty  (для денег: id "cash", qty = тысячи)
+  let stepIdx = 0, region = "EU", when = "Прямо сейчас", pay = "crypto", sheetOpen = false, activeTab = 0;
+
+  // ---------- форматирование ----------
+  const nf = new Intl.NumberFormat("ru-RU");
+  const money = (n) => nf.format(Math.round(n)) + " " + (C ? C.currency : "₽");
+  const usd = (k) => nf.format(k * 1000);
+  const rateFor = (k) => C.cash.tiers.filter(t => k >= t.from_k).pop().rate;
+  const cashPrice = (k) => Math.round(k * rateFor(k));
+  const itemIndex = () => Object.fromEntries(C.categories.flatMap(c => c.items).map(i => [i.id, i]));
+  let IDX = {};
+
+  const haptic = (t) => { try { tg && tg.HapticFeedback && (t === "error" || t === "success" ? tg.HapticFeedback.notificationOccurred(t) : tg.HapticFeedback.selectionChanged()); } catch (e) {} };
+
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  // ---------- гильош на банкноте ----------
+  function rosette(svg, seed) {
+    const ns = "http://www.w3.org/2000/svg";
+    for (let L = 0; L < 14; L++) {
+      const R = 52 + L * 6.5, a = 7 + (L % 4) * 2.2, n = 9 + (seed % 3) * 3, m = 3 + (L % 3);
+      let d = "";
+      for (let s = 0; s <= 720; s++) {
+        const t = (s / 720) * Math.PI * 2;
+        const r = R + a * Math.sin(n * t + L * 0.42) + a * 0.45 * Math.cos(m * t);
+        d += (s ? "L" : "M") + (r * Math.cos(t)).toFixed(2) + " " + (r * Math.sin(t)).toFixed(2);
+      }
+      const p = document.createElementNS(ns, "path");
+      p.setAttribute("d", d + "Z");
+      p.setAttribute("fill", "none");
+      p.setAttribute("stroke", L % 5 === 0 ? "#E3B34C" : "#B9E4C9");
+      p.setAttribute("stroke-opacity", L % 5 === 0 ? ".35" : ".22");
+      p.setAttribute("stroke-width", ".6");
+      svg.appendChild(p);
+    }
+  }
+
+  // ---------- деньги ----------
+  function renderCash() {
+    const k = C.cash.steps_k[stepIdx];
+    const el = $("#amount");
+    const txt = usd(k);
+    el.innerHTML = '<span class="cur">$</span>' + txt;
+    el.style.fontSize = txt.length > 9 ? "clamp(26px, 9.4vw, 40px)" : "";
+    $("#cashPrice").textContent = money(cashPrice(k));
+    $("#cashRate").textContent = rateFor(k).toLocaleString("ru-RU", { minimumFractionDigits: 2 }) + " " + C.currency + " за 1 000 $";
+    const r = $("#cashRange");
+    r.style.setProperty("--fill", (stepIdx / (C.cash.steps_k.length - 1) * 100) + "%");
+    document.querySelectorAll("#presets .chip").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.k === k)));
+    const inCart = cart.get("cash");
+    const btn = $("#cashAdd");
+    if (inCart === k) { btn.textContent = "В корзине"; btn.classList.add("ghost"); }
+    else if (inCart) { btn.textContent = "Заменить"; btn.classList.remove("ghost"); }
+    else { btn.textContent = "В корзину"; btn.classList.remove("ghost"); }
+  }
+
+  function initCash() {
+    const steps = C.cash.steps_k;
+    stepIdx = Math.max(0, steps.indexOf(C.cash.default_k));
+    const r = $("#cashRange");
+    r.max = steps.length - 1; r.value = stepIdx;
+    r.addEventListener("input", () => { stepIdx = +r.value; haptic(); renderCash(); });
+    const presets = [100, 500, 1000, 5000].filter(k => steps.includes(k));
+    $("#presets").innerHTML = presets.map(k => `<button type="button" class="chip" data-k="${k}">${k >= 1000 ? k / 1000 + "M" : k + "K"}</button>`).join("");
+    $("#presets").addEventListener("click", (e) => {
+      const b = e.target.closest(".chip"); if (!b) return;
+      stepIdx = steps.indexOf(+b.dataset.k); r.value = stepIdx; haptic(); renderCash();
+    });
+    $("#cashAdd").addEventListener("click", () => {
+      const k = steps[stepIdx];
+      if (cart.get("cash") === k) { openSheet(); return; }
+      cart.set("cash", k); haptic("success"); toast("Добавлено " + usd(k) + " $");
+      renderCash(); updateCTA();
+    });
+    renderCash();
+  }
+
+  // ---------- каталог ----------
+  function renderTabs() {
+    $("#tabs").innerHTML = C.categories.map((c, i) =>
+      `<button type="button" class="tab" role="tab" aria-selected="${i === activeTab}" data-i="${i}">${c.title}</button>`).join("");
+  }
+  function rowControl(id) {
+    const q = cart.get(id) || 0;
+    if (!q) return `<button type="button" class="add" data-act="inc" data-id="${id}" aria-label="Добавить">+</button>`;
+    return `<div class="stepper"><button type="button" data-act="dec" data-id="${id}" aria-label="Меньше">−</button><output>${q}</output><button type="button" data-act="inc" data-id="${id}" aria-label="Больше">+</button></div>`;
+  }
+  function renderList() {
+    const cat = C.categories[activeTab];
+    $("#list").innerHTML = cat.items.map(it => `
+      <div class="row rarity-${it.rarity}">
+        <span class="bar"></span>
+        <div><div class="r-name">${it.name}</div><div class="r-meta"><span class="r-tier">${RARITY[it.rarity] || ""}</span></div></div>
+        <div class="r-right"><span class="r-price">${money(it.price)}</span><span data-ctl="${it.id}">${rowControl(it.id)}</span></div>
+      </div>`).join("");
+  }
+  function changeQty(id, d) {
+    const q = Math.max(0, Math.min(99, (cart.get(id) || 0) + d));
+    q ? cart.set(id, q) : cart.delete(id);
+    haptic();
+    const slot = document.querySelector(`[data-ctl="${id}"]`); if (slot) slot.innerHTML = rowControl(id);
+    updateCTA();
+    if (sheetOpen) renderReceipt();
+  }
+
+  // ---------- корзина / кнопка ----------
+  function total() {
+    let s = 0;
+    for (const [id, q] of cart) s += id === "cash" ? cashPrice(q) : IDX[id].price * q;
+    return s;
+  }
+  function setCTA(text, visible) {
+    if (inTG) {
+      const mb = tg.MainButton;
+      mb.setParams({ text, color: "#E3B34C", text_color: "#241A05" });
+      visible ? mb.show() : mb.hide();
+    } else {
+      $("#ctaBtn").textContent = text;
+      $("#ctaBar").classList.toggle("show", visible);
+    }
+  }
+  function updateCTA() {
+    const n = cart.size;
+    if (sheetOpen) setCTA(n ? "Отправить заказ · " + money(total()) : "Корзина пуста", true);
+    else setCTA("Оформить · " + money(total()), n > 0);
+  }
+  function onCTA() {
+    if (!sheetOpen) { if (cart.size) openSheet(); return; }
+    submit();
+  }
+
+  function renderReceipt() {
+    if (!cart.size) { $("#receipt").innerHTML = '<div class="empty">Корзина пуста. Выбери деньги или предметы.</div>'; return; }
+    let h = "";
+    for (const [id, q] of cart) {
+      if (id === "cash") h += `<div class="rc-line"><span>${usd(q)} $ игровых денег</span><span>${money(cashPrice(q))}</span></div>`;
+      else h += `<div class="rc-line"><span>${IDX[id].name}${q > 1 ? " × " + q : ""}</span><span>${money(IDX[id].price * q)}</span></div>`;
+    }
+    h += `<div class="rc-total"><span>Итого</span><b>${money(total())}</b></div><button type="button" class="rc-clear" id="clear">Очистить корзину</button>`;
+    $("#receipt").innerHTML = h;
+    $("#clear").onclick = () => { cart.clear(); renderReceipt(); renderList(); renderCash(); updateCTA(); };
+  }
+
+  function setRegion(r) {
+    region = r;
+    document.querySelectorAll("[data-region]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.region === r)));
+    try { localStorage.setItem("rr_region", r); } catch (e) {}
+  }
+
+  function openSheet() {
+    sheetOpen = true; renderReceipt(); $("#checkout").classList.add("open");
+    if (inTG) tg.BackButton.show();
+    updateCTA();
+  }
+  function closeSheet() {
+    sheetOpen = false; $("#checkout").classList.remove("open");
+    if (inTG) tg.BackButton.hide();
+    renderList(); renderCash(); updateCTA();
+  }
+
+  function submit() {
+    if (!cart.size) return;
+    const server = $("#server").value.trim(), nick = $("#nick").value.trim();
+    $("#fServer").classList.toggle("err", !server);
+    $("#fNick").classList.toggle("err", !nick);
+    if (!server || !nick) {
+      haptic("error");
+      (!server ? $("#server") : $("#nick")).focus();
+      toast("Укажи сервер и ник");
+      return;
+    }
+    try { localStorage.setItem("rr_nick", nick); localStorage.setItem("rr_server", server); } catch (e) {}
+    const order = {
+      v: 2, region, server, nick, when, pay,
+      comment: $("#comment").value.trim().slice(0, 300),
+      items: [...cart].map(([id, q]) => ({ id, q })),
+      total: total()
+    };
+    haptic("success");
+    if (inTG) { tg.sendData(JSON.stringify(order)); return; }   // Telegram закроет окно сам
+    console.log("Заказ (предпросмотр):", order);
+    $("#done").classList.add("show");
+  }
+
+  function setPay(p) {
+    pay = p;
+    document.querySelectorAll("#pay .pay-opt").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.pay === p)));
+    try { localStorage.setItem("rr_pay", p); } catch (e) {}
+  }
+  function initPay() {
+    const enabled = C.payments && C.payments.length ? C.payments : ["manual"];
+    document.querySelectorAll("#pay .pay-opt").forEach(b => { b.hidden = !enabled.includes(b.dataset.pay); });
+    let saved = null; try { saved = localStorage.getItem("rr_pay"); } catch (e) {}
+    setPay(enabled.includes(saved) ? saved : enabled[0]);
+    $("#pay").addEventListener("click", (e) => {
+      const b = e.target.closest(".pay-opt"); if (!b) return;
+      setPay(b.dataset.pay); haptic();
+    });
+  }
+
+  // ---------- старт ----------
+  function bind() {
+    $("#tabs").addEventListener("click", (e) => {
+      const b = e.target.closest(".tab"); if (!b) return;
+      activeTab = +b.dataset.i; haptic(); renderTabs(); renderList();
+    });
+    $("#list").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-act]"); if (!b) return;
+      changeQty(b.dataset.id, b.dataset.act === "inc" ? 1 : -1);
+    });
+    document.querySelectorAll(".seg [data-region]").forEach(b => b.addEventListener("click", () => { setRegion(b.dataset.region); haptic(); }));
+    $("#when").addEventListener("click", (e) => {
+      const b = e.target.closest(".chip"); if (!b) return;
+      when = b.textContent;
+      document.querySelectorAll("#when .chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+      haptic();
+    });
+    $("#scrim").addEventListener("click", closeSheet);
+    $("#ctaBtn").addEventListener("click", onCTA);
+    ["server", "nick"].forEach(id => $("#" + id).addEventListener("input", () => $("#f" + id[0].toUpperCase() + id.slice(1)).classList.remove("err")));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheetOpen) closeSheet(); });
+
+    if (inTG) {
+      tg.MainButton.onClick(onCTA);
+      tg.BackButton.onClick(closeSheet);
+    }
+  }
+
+  async function start() {
+    if (tg) {
+      tg.ready(); tg.expand();
+      try { tg.setHeaderColor("#0F2620"); tg.setBackgroundColor("#0F2620"); } catch (e) {}
+    }
+    rosette($(".note .rosette"), 1);
+    rosette($(".note .rosette.small"), 2);
+    $("#serial").textContent = "LB " + String(Math.floor(Math.random() * 1e6)).padStart(6, "0");
+
+    try {
+      const res = await fetch("catalog.json", { cache: "no-store" });
+      C = await res.json();
+    } catch (e) {
+      $("#list").innerHTML = '<div class="empty">Не удалось загрузить каталог. Закрой и открой магазин ещё раз.</div>';
+      return;
+    }
+    IDX = itemIndex();
+    $("#shopName").textContent = C.shop_name;
+    document.title = C.shop_name;
+    try {
+      setRegion(localStorage.getItem("rr_region") || "EU");
+      $("#nick").value = localStorage.getItem("rr_nick") || "";
+      $("#server").value = localStorage.getItem("rr_server") || "";
+    } catch (e) { setRegion("EU"); }
+
+    bind(); initPay(); initCash(); renderTabs(); renderList(); updateCTA();
+  }
+  start();
+})();
+</script>
+</body>
+</html>

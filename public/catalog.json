@@ -1,0 +1,157 @@
+{
+  "shop_name": "Looty Exchange",
+  "currency": "₽",
+  "currency_code": "RUB",
+  "payments": [
+    "crypto",
+    "manual"
+  ],
+  "cash": {
+    "steps_k": [
+      100,
+      150,
+      200,
+      250,
+      300,
+      400,
+      500,
+      600,
+      700,
+      800,
+      900,
+      1000,
+      1250,
+      1500,
+      2000,
+      2500,
+      3000,
+      4000,
+      5000,
+      7500,
+      10000
+    ],
+    "default_k": 1000,
+    "tiers": [
+      {
+        "from_k": 0,
+        "rate": 0.86
+      },
+      {
+        "from_k": 500,
+        "rate": 0.8
+      },
+      {
+        "from_k": 1000,
+        "rate": 0.7
+      },
+      {
+        "from_k": 5000,
+        "rate": 0.62
+      }
+    ]
+  },
+  "categories": [
+    {
+      "id": "keys",
+      "title": "Ключи",
+      "items": [
+        {
+          "id": "key_green",
+          "name": "Зелёный ключ",
+          "rarity": "rare",
+          "price": 60
+        },
+        {
+          "id": "key_epic",
+          "name": "Эпический ключ",
+          "rarity": "epic",
+          "price": 130
+        },
+        {
+          "id": "key_legendary",
+          "name": "Легендарный ключ",
+          "rarity": "legendary",
+          "price": 260
+        },
+        {
+          "id": "key_gold_vault",
+          "name": "Золотой ключ от хранилища",
+          "rarity": "legendary",
+          "price": 420
+        }
+      ]
+    },
+    {
+      "id": "decoders",
+      "title": "Декодеры",
+      "items": [
+        {
+          "id": "dec_green",
+          "name": "Зелёный декодер",
+          "rarity": "rare",
+          "price": 55
+        },
+        {
+          "id": "dec_epic",
+          "name": "Эпический декодер",
+          "rarity": "epic",
+          "price": 160
+        }
+      ]
+    },
+    {
+      "id": "bushes",
+      "title": "Кусты",
+      "items": [
+        {
+          "id": "bush_rare",
+          "name": "Редкий куст",
+          "rarity": "rare",
+          "price": 120
+        },
+        {
+          "id": "bush_epic",
+          "name": "Эпический куст",
+          "rarity": "epic",
+          "price": 320
+        },
+        {
+          "id": "bush_legendary",
+          "name": "Легендарный куст",
+          "rarity": "legendary",
+          "price": 460
+        }
+      ]
+    },
+    {
+      "id": "premium",
+      "title": "Техника",
+      "items": [
+        {
+          "id": "drill",
+          "name": "Бур для хранилища",
+          "rarity": "epic",
+          "price": 1900
+        },
+        {
+          "id": "car_royal_e",
+          "name": "Royal E, тир 2",
+          "rarity": "epic",
+          "price": 800
+        },
+        {
+          "id": "car_tier4",
+          "name": "Машина тир 4",
+          "rarity": "legendary",
+          "price": 2600
+        },
+        {
+          "id": "heli",
+          "name": "Вертолёт",
+          "rarity": "legendary",
+          "price": 5600
+        }
+      ]
+    }
+  ]
+}
